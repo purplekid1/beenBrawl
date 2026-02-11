@@ -1,10 +1,12 @@
 extends CharacterBody3D
 
-
 const SPEED := 5.0
 const JUMP_VELOCITY := 4.5
 const ATTACK_RANGE := 3.0
 const DUMMY_HIT_FORCE := 4.0
+const MOUSE_SENSITIVITY := 0.0025
+const CAMERA_PITCH_LIMIT := deg_to_rad(75.0)
+const COMBO_INPUT_WINDOW := 0.18
 const COMBO_ANIMATIONS := [
 	&"Arms_cross_R",
 	&"Arms_Heavy_L",
@@ -16,25 +18,31 @@ var combo_step := -1
 var attack_in_progress := false
 var queued_next_attack := false
 var attack_token := 0
+var camera_pitch := 0.0
 
 @onready var animation_player: AnimationPlayer = $"CollisionShape3D/fighter Arms/AnimationPlayer"
+@onready var animation_tree: AnimationTree = $"CollisionShape3D/fighter Arms/AnimationTree"
 @onready var camera: Camera3D = $"CollisionShape3D/fighter Arms/Arms_Rig/Skeleton3D/BoneAttachment3D/Camera3D"
 @onready var hit_effect_scene: PackedScene = preload("res://hit_effect.tscn")
 
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if animation_tree:
+		animation_tree.active = false
 	if not animation_player.animation_finished.is_connected(_on_attack_animation_finished):
 		animation_player.animation_finished.connect(_on_attack_animation_finished)
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("attack"):
 		_register_attack_click()
 	elif event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_rotate_look(event.relative)
 
 
 func _physics_process(delta: float) -> void:
@@ -45,15 +53,21 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction := (global_transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	if direction:
 		velocity.x = direction.x * SPEED
 		velocity.z = direction.z * SPEED
 	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED)
-		velocity.z = move_toward(velocity.z, 0, SPEED)
+		velocity.x = move_toward(velocity.x, 0.0, SPEED)
+		velocity.z = move_toward(velocity.z, 0.0, SPEED)
 
 	move_and_slide()
+
+
+func _rotate_look(relative_motion: Vector2) -> void:
+	rotate_y(-relative_motion.x * MOUSE_SENSITIVITY)
+	camera_pitch = clamp(camera_pitch - relative_motion.y * MOUSE_SENSITIVITY, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT)
+	camera.rotation.x = camera_pitch
 
 
 func _register_attack_click() -> void:
@@ -76,10 +90,19 @@ func _play_attack_step() -> void:
 	var step_token := attack_token
 	var animation_length := animation_player.get_animation(attack_animation).length
 	var hit_delay := max(0.03, animation_length * 0.3)
+	var combo_queue_window := max(0.03, animation_length - COMBO_INPUT_WINDOW)
+
 	get_tree().create_timer(hit_delay).timeout.connect(func() -> void:
 		if step_token != attack_token:
 			return
 		_process_hit())
+
+	get_tree().create_timer(combo_queue_window).timeout.connect(func() -> void:
+		if step_token != attack_token:
+			return
+		if queued_next_attack and combo_step < COMBO_ANIMATIONS.size() - 1:
+			combo_step += 1
+			_play_attack_step())
 
 
 func _on_attack_animation_finished(animation_name: StringName) -> void:
