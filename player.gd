@@ -83,14 +83,14 @@ func _play_attack_step() -> void:
 	attack_in_progress = true
 	queued_next_attack = false
 
-	var attack_animation := COMBO_ANIMATIONS[combo_step]
+	var attack_animation = COMBO_ANIMATIONS[combo_step]
 	animation_player.play(attack_animation)
 
 	attack_token += 1
 	var step_token := attack_token
 	var animation_length := animation_player.get_animation(attack_animation).length
-	var hit_delay := max(0.03, animation_length * 0.3)
-	var combo_queue_window := max(0.03, animation_length - COMBO_INPUT_WINDOW)
+	var hit_delay = max(0.03, animation_length * 0.3)
+	var combo_queue_window = max(0.03, animation_length - COMBO_INPUT_WINDOW)
 
 	get_tree().create_timer(hit_delay).timeout.connect(func() -> void:
 		if step_token != attack_token:
@@ -138,10 +138,10 @@ func _process_hit() -> void:
 
 	_spawn_hit_effect(hit_result.position, hit_result.normal)
 
-	var hit_body := hit_result.collider
+	var hit_body = hit_result.collider
 	if hit_body is RigidBody3D:
-		var impulse := ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
-		var local_offset := hit_result.position - hit_body.global_position
+		var impulse = ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
+		var local_offset = hit_result.position - hit_body.global_position
 		hit_body.apply_impulse(impulse, local_offset)
 
 
