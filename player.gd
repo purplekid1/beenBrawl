@@ -170,10 +170,10 @@ func _process_hit() -> void:
 
 	_spawn_hit_effect(hit_result.position, hit_result.normal)
 
-	var hit_body := hit_result.collider
+	var hit_body = hit_result.collider
 	if hit_body is RigidBody3D:
-		var impulse := ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
-		var local_offset := hit_result.position - hit_body.global_position
+		var impulse = ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
+		var local_offset = hit_result.position - hit_body.global_position
 		hit_body.apply_impulse(impulse, local_offset)
 
 
@@ -181,18 +181,3 @@ func _spawn_hit_effect(hit_position: Vector3, hit_normal: Vector3) -> void:
 	var hit_effect := hit_effect_scene.instantiate() as Node3D
 	get_tree().current_scene.add_child(hit_effect)
 	hit_effect.global_position = hit_position
-	hit_effect.look_at(hit_position + hit_normal, Vector3.UP)
-
-	var sparks := hit_effect.get_node_or_null("Sparks") as GPUParticles3D
-	if sparks:
-		sparks.restart()
-		sparks.emitting = true
-
-	var shockwave := hit_effect.get_node_or_null("shockwave") as GPUParticles3D
-	if shockwave:
-		shockwave.restart()
-		shockwave.emitting = true
-
-	get_tree().create_timer(1.0).timeout.connect(func() -> void:
-		if is_instance_valid(hit_effect):
-			hit_effect.queue_free())
