@@ -5,17 +5,17 @@ const SPEED := 5.0
 const JUMP_VELOCITY := 4.5
 const ATTACK_RANGE := 3.0
 const DUMMY_HIT_FORCE := 4.0
-const COMBO_ANIMATIONS: Array[StringName] = [
+const COMBO_ANIMATIONS := [
 	&"Arms_cross_R",
 	&"Arms_Heavy_L",
 	&"Arms_cross_L",
 	&"Arms_Heavy_R"
 ]
 
-var combo_step: int = -1
-var attack_in_progress: bool = false
-var queued_next_attack: bool = false
-var attack_token: int = 0
+var combo_step := -1
+var attack_in_progress := false
+var queued_next_attack := false
+var attack_token := 0
 
 @onready var animation_player: AnimationPlayer = $"CollisionShape3D/fighter Arms/AnimationPlayer"
 @onready var camera: Camera3D = $"CollisionShape3D/fighter Arms/Arms_Rig/Skeleton3D/BoneAttachment3D/Camera3D"
@@ -69,13 +69,13 @@ func _play_attack_step() -> void:
 	attack_in_progress = true
 	queued_next_attack = false
 
-	var attack_animation: StringName = COMBO_ANIMATIONS[combo_step]
+	var attack_animation := COMBO_ANIMATIONS[combo_step]
 	animation_player.play(attack_animation)
 
 	attack_token += 1
-	var step_token: int = attack_token
-	var animation_length: float = animation_player.get_animation(attack_animation).length
-	var hit_delay: float = maxf(0.03, animation_length * 0.3)
+	var step_token := attack_token
+	var animation_length := animation_player.get_animation(attack_animation).length
+	var hit_delay := max(0.03, animation_length * 0.3)
 	get_tree().create_timer(hit_delay).timeout.connect(func() -> void:
 		if step_token != attack_token:
 			return
@@ -104,25 +104,22 @@ func _reset_combo() -> void:
 
 
 func _process_hit() -> void:
-	var hit_from: Vector3 = camera.global_position
-	var hit_to: Vector3 = hit_from + (-camera.global_transform.basis.z * ATTACK_RANGE)
-	var ray_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(hit_from, hit_to)
+	var hit_from := camera.global_position
+	var hit_to := hit_from + (-camera.global_transform.basis.z * ATTACK_RANGE)
+	var ray_query := PhysicsRayQueryParameters3D.create(hit_from, hit_to)
 	ray_query.exclude = [self]
 	ray_query.collide_with_areas = false
-	var hit_result: Dictionary = get_world_3d().direct_space_state.intersect_ray(ray_query)
+	var hit_result := get_world_3d().direct_space_state.intersect_ray(ray_query)
 	if hit_result.is_empty():
 		return
 
-	var hit_position: Vector3 = hit_result["position"]
-	var hit_normal: Vector3 = hit_result["normal"]
-	_spawn_hit_effect(hit_position, hit_normal)
+	_spawn_hit_effect(hit_result.position, hit_result.normal)
 
-	var hit_body: Object = hit_result["collider"]
+	var hit_body := hit_result.collider
 	if hit_body is RigidBody3D:
-		var rigid_body: RigidBody3D = hit_body
-		var impulse: Vector3 = ((-camera.global_transform.basis.z) + (hit_normal * 0.35)).normalized() * DUMMY_HIT_FORCE
-		var local_offset: Vector3 = hit_position - rigid_body.global_position
-		rigid_body.apply_impulse(impulse, local_offset)
+		var impulse := ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
+		var local_offset := hit_result.position - hit_body.global_position
+		hit_body.apply_impulse(impulse, local_offset)
 
 
 func _spawn_hit_effect(hit_position: Vector3, hit_normal: Vector3) -> void:
