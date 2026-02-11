@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dh6u1frrwnjqa"]
 
 [ext_resource type="PackedScene" uid="uid://mo1hbu717tty" path="res://player.tscn" id="1_ig7tw"]
+[ext_resource type="PackedScene" path="res://dummy.tscn" id="2_3mcl6"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ig7tw"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -33,3 +34,6 @@ mesh = SubResource("BoxMesh_7dm0k")
 
 [node name="Player" parent="." unique_id=598474296 instance=ExtResource("1_ig7tw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="TrainingDummy" parent="." instance=ExtResource("2_3mcl6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -3)
