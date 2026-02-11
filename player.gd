@@ -14,7 +14,7 @@ var attack_in_progress := false
 var queued_next_attack := false
 var attack_token := 0
 var camera_pitch := 0.0
-var combo_sequence: Array[StringName] = []
+var combo_sequence = []
 
 @onready var animation_player: AnimationPlayer = $"CollisionShape3D/fighter Arms/AnimationPlayer"
 @onready var animation_tree: AnimationTree = $"CollisionShape3D/fighter Arms/AnimationTree"
@@ -80,7 +80,7 @@ func _register_attack_click() -> void:
 	_play_attack_step()
 
 
-func _build_combo_sequence() -> Array[StringName]:
+func _build_combo_sequence() -> Array:
 	var start_with_left := _start_combo_on_left()
 	if start_with_left:
 		return [&"Arms_cross_L", &"Arms_cross_R", &"Arms_cross_L", &"Arms_Heavy_R"]
@@ -92,7 +92,7 @@ func _start_combo_on_left() -> bool:
 	if playback == null:
 		return false
 
-	var current_node := StringName(playback.get_current_node())
+	var current_node = playback.get_current_node()
 	if current_node == &"Arms_Idle_R":
 		return true
 	if current_node == &"Arms_Idle_L":
@@ -124,7 +124,7 @@ func _play_attack_step() -> void:
 	var attack_clip := animation_player.get_animation(attack_animation)
 	if attack_clip == null:
 		return
-	var hit_delay = max(0.03, attack_clip.length * 0.3)
+	var hit_delay := max(0.03, attack_clip.length * 0.3)
 	get_tree().create_timer(hit_delay).timeout.connect(func() -> void:
 		if step_token != attack_token:
 			return
@@ -154,7 +154,7 @@ func _reset_combo() -> void:
 	combo_sequence.clear()
 
 
-func _get_playback() -> AnimationNodeStateMachinePlayback:
+func _get_playback():
 	return animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
 
 
