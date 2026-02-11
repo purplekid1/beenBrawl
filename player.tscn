@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://mo1hbu717tty"]
+
+[ext_resource type="Script" uid="uid://c3qw1bdgthddi" path="res://player.gd" id="1_onrkg"]
+[ext_resource type="PackedScene" uid="uid://b26qb282r2xsb" path="res://fighter_arms.tscn" id="2_onrkg"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_onrkg"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_i3pqv"]
+
+[node name="Player" type="CharacterBody3D" unique_id=598474296]
+script = ExtResource("1_onrkg")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=106870028]
+shape = SubResource("CapsuleShape3D_onrkg")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D" unique_id=2097475270]
+mesh = SubResource("CapsuleMesh_i3pqv")
+
+[node name="fighter Arms" parent="CollisionShape3D" unique_id=401387558 instance=ExtResource("2_onrkg")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0.4997331, 0)
