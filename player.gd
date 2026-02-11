@@ -32,6 +32,7 @@ func _ready() -> void:
 		animation_tree.active = false
 	if not animation_player.animation_finished.is_connected(_on_attack_animation_finished):
 		animation_player.animation_finished.connect(_on_attack_animation_finished)
+	_apply_camera_pitch()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -75,11 +76,40 @@ func _register_attack_click() -> void:
 		queued_next_attack = true
 		return
 
+	combo_sequence = _build_combo_sequence()
 	combo_step = 0
 	_play_attack_step()
 
 
+func _build_combo_sequence() -> Array[StringName]:
+	var start_with_left := _start_combo_on_left()
+	if start_with_left:
+		return [&"Arms_cross_L", &"Arms_cross_R", &"Arms_cross_L", &"Arms_Heavy_R"]
+	return [&"Arms_cross_R", &"Arms_cross_L", &"Arms_cross_R", &"Arms_Heavy_L"]
+
+
+func _start_combo_on_left() -> bool:
+	var playback := _get_playback()
+	if playback == null:
+		return false
+
+	var current_node := StringName(playback.get_current_node())
+	if current_node == &"Arms_Idle_R":
+		return true
+	if current_node == &"Arms_Idle_L":
+		return false
+	if current_node == &"Arms_cross_R" or current_node == &"Arms_Heavy_R":
+		return true
+	if current_node == &"Arms_cross_L" or current_node == &"Arms_Heavy_L":
+		return false
+	return false
+
+
 func _play_attack_step() -> void:
+	if combo_step < 0 or combo_step >= combo_sequence.size():
+		_reset_combo()
+		return
+
 	attack_in_progress = true
 	queued_next_attack = false
 
@@ -108,11 +138,12 @@ func _play_attack_step() -> void:
 func _on_attack_animation_finished(animation_name: StringName) -> void:
 	if not attack_in_progress:
 		return
-
-	if animation_name != COMBO_ANIMATIONS[combo_step]:
+	if combo_step < 0 or combo_step >= combo_sequence.size():
+		return
+	if animation_name != combo_sequence[combo_step]:
 		return
 
-	if queued_next_attack and combo_step < COMBO_ANIMATIONS.size() - 1:
+	if queued_next_attack and combo_step < COMBO_ATTACK_COUNT - 1:
 		combo_step += 1
 		_play_attack_step()
 		return
@@ -124,6 +155,11 @@ func _reset_combo() -> void:
 	combo_step = -1
 	queued_next_attack = false
 	attack_in_progress = false
+	combo_sequence.clear()
+
+
+func _get_playback() -> AnimationNodeStateMachinePlayback:
+	return animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
 
 
 func _process_hit() -> void:

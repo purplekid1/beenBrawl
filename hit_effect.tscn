@@ -87,7 +87,6 @@ draw_pass_1 = SubResource("QuadMesh_kg7u2")
 visibility_range_fade_mode = 1
 emitting = false
 amount = 1
-sub_emitter = NodePath("../Sparks")
 lifetime = 0.6
 one_shot = true
 explosiveness = 1.0

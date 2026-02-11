@@ -12,15 +12,27 @@ mid_height = 1.2
 albedo_color = Color(0.772549, 0.67451, 0.580392, 1)
 roughness = 0.7
 
-[node name="Dummy" type="RigidBody3D"]
-freeze_mode = 1
-mass = 1.5
-linear_damp = 1.8
-angular_damp = 3.0
+[node name="DummyRig" type="Node3D"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="Pivot" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="Dummy" type="RigidBody3D" parent="."]
+mass = 1.5
+linear_damp = 2.4
+angular_damp = 3.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dummy"]
 shape = SubResource("CapsuleShape3D_5c8v3")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dummy"]
 mesh = SubResource("CapsuleMesh_u6p3u")
 surface_material_override/0 = SubResource("StandardMaterial3D_tm78x")
+
+[node name="PinJoint3D" type="PinJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+node_a = NodePath("../Pivot")
+node_b = NodePath("../Dummy")
+params/bias = 0.2
+params/damping = 1.0
+params/impulse_clamp = 0.0
