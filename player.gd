@@ -6,15 +6,19 @@ const ATTACK_RANGE := 3.0
 const DUMMY_HIT_FORCE := 4.0
 const MOUSE_SENSITIVITY := 0.0025
 const CAMERA_PITCH_LIMIT := deg_to_rad(75.0)
-const CAMERA_BASE_PITCH := -PI * 0.5
-const COMBO_ATTACK_COUNT := 4
+const COMBO_INPUT_WINDOW := 0.18
+const COMBO_ANIMATIONS := [
+	&"Arms_cross_R",
+	&"Arms_Heavy_L",
+	&"Arms_cross_L",
+	&"Arms_Heavy_R"
+]
 
 var combo_step := -1
 var attack_in_progress := false
 var queued_next_attack := false
 var attack_token := 0
 var camera_pitch := 0.0
-var combo_sequence: Array[StringName] = []
 
 @onready var animation_player: AnimationPlayer = $"CollisionShape3D/fighter Arms/AnimationPlayer"
 @onready var animation_tree: AnimationTree = $"CollisionShape3D/fighter Arms/AnimationTree"
@@ -24,7 +28,8 @@ var combo_sequence: Array[StringName] = []
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	animation_tree.active = true
+	if animation_tree:
+		animation_tree.active = false
 	if not animation_player.animation_finished.is_connected(_on_attack_animation_finished):
 		animation_player.animation_finished.connect(_on_attack_animation_finished)
 	_apply_camera_pitch()
@@ -63,11 +68,7 @@ func _physics_process(delta: float) -> void:
 func _rotate_look(relative_motion: Vector2) -> void:
 	rotate_y(-relative_motion.x * MOUSE_SENSITIVITY)
 	camera_pitch = clamp(camera_pitch - relative_motion.y * MOUSE_SENSITIVITY, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT)
-	_apply_camera_pitch()
-
-
-func _apply_camera_pitch() -> void:
-	camera.rotation.x = CAMERA_BASE_PITCH + camera_pitch
+	camera.rotation.x = camera_pitch
 
 
 func _register_attack_click() -> void:
@@ -112,23 +113,26 @@ func _play_attack_step() -> void:
 	attack_in_progress = true
 	queued_next_attack = false
 
-	var attack_animation := combo_sequence[combo_step]
-	var playback := _get_playback()
-	if playback == null:
-		_reset_combo()
-		return
-	playback.travel(attack_animation)
+	var attack_animation = COMBO_ANIMATIONS[combo_step]
+	animation_player.play(attack_animation)
 
 	attack_token += 1
 	var step_token := attack_token
-	var attack_clip := animation_player.get_animation(attack_animation)
-	if attack_clip == null:
-		return
-	var hit_delay := max(0.03, attack_clip.length * 0.3)
+	var animation_length := animation_player.get_animation(attack_animation).length
+	var hit_delay = max(0.03, animation_length * 0.3)
+	var combo_queue_window = max(0.03, animation_length - COMBO_INPUT_WINDOW)
+
 	get_tree().create_timer(hit_delay).timeout.connect(func() -> void:
 		if step_token != attack_token:
 			return
 		_process_hit())
+
+	get_tree().create_timer(combo_queue_window).timeout.connect(func() -> void:
+		if step_token != attack_token:
+			return
+		if queued_next_attack and combo_step < COMBO_ANIMATIONS.size() - 1:
+			combo_step += 1
+			_play_attack_step())
 
 
 func _on_attack_animation_finished(animation_name: StringName) -> void:
@@ -170,10 +174,10 @@ func _process_hit() -> void:
 
 	_spawn_hit_effect(hit_result.position, hit_result.normal)
 
-	var hit_body := hit_result.collider
+	var hit_body = hit_result.collider
 	if hit_body is RigidBody3D:
-		var impulse := ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
-		var local_offset := hit_result.position - hit_body.global_position
+		var impulse = ((-camera.global_transform.basis.z) + (hit_result.normal * 0.35)).normalized() * DUMMY_HIT_FORCE
+		var local_offset = hit_result.position - hit_body.global_position
 		hit_body.apply_impulse(impulse, local_offset)
 
 
